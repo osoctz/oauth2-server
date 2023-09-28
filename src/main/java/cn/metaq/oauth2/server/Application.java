@@ -2,14 +2,18 @@ package cn.metaq.oauth2.server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.servlet.ServletComponentScan;
 
+/**
+ * <p>Date: 2023/9/27 17:17.</p>
+ * <p>description.</p>
+ *
+ * @author zantang
+ */
 @SpringBootApplication
-@ServletComponentScan
-public class Oauth2ServerApplication {
+public class Application {
 
     public static void main(String[] args) {
-        SpringApplication.run(Oauth2ServerApplication.class, args);
-    }
 
+        SpringApplication.run(Application.class,args);
+    }
 }
