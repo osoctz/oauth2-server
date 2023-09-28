@@ -36,45 +36,178 @@ import org.springframework.security.oauth2.server.authorization.settings.ClientS
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+//	@Bean
+//	@Order(1)
+//	public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
+//			throws Exception {
+//		OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+//		http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
+//			.oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0
+//		http
+//			// Redirect to the login page when not authenticated from the
+//			// authorization endpoint
+//			.exceptionHandling((exceptions) -> exceptions
+//				.defaultAuthenticationEntryPointFor(
+//					new LoginUrlAuthenticationEntryPoint("/login"),
+//					new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
+//				)
+//			)
+//			// Accept access tokens for User Info and/or Client Registration
+//			.oauth2ResourceServer((resourceServer) -> resourceServer
+//				.jwt(Customizer.withDefaults()));
+//
+//		return http.build();
+//	}
+//
+//	@Bean
+//	@Order(2)
+//	public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
+//			throws Exception {
+//		http.authorizeRequests((authorize) -> authorize
+//				.anyRequest().authenticated()
+//			)
+//			// Form login handles the redirect to the login page from the
+//			// authorization server filter chain
+//			.formLogin(Customizer.withDefaults());
+//
+//		return http.build();
+//	}
+//
+//	@Bean
+//	public UserDetailsService userDetailsService() {
+//		UserDetails userDetails = User.withDefaultPasswordEncoder()
+//				.username("admin")
+//				.password("admin")
+//				.roles("USER")
+//				.build();
+//
+//		return new InMemoryUserDetailsManager(userDetails);
+//	}
+//
+////	@Bean
+////	public RegisteredClientRepository registeredClientRepository() {
+////		RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
+////				.clientId("oidc-client")
+////				.clientSecret("{noop}secret")
+////				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+////				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+////				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+////				.redirectUri("http://127.0.0.1:9000/login/oauth2/code/oidc-client")
+////				.redirectUri("http://www.baidu.com")
+////				.postLogoutRedirectUri("http://127.0.0.1:9000/")
+////				.scope(OidcScopes.OPENID)
+////				.scope(OidcScopes.PROFILE)
+////				.scope("message.read")
+////				.scope("message.write")
+////				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+////				.build();
+////
+////		return new InMemoryRegisteredClientRepository(oidcClient);
+////	}
+//
+//	@Bean
+//	public RegisteredClientRepository registeredClientRepository() {
+//		RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
+//				.clientId("demo-client-id")
+//				.clientSecret("{noop}demo-client-secret")
+//				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+//				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+//				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+//				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+////                .tokenSettings(TokenSettings.builder().accessTokenFormat(OAuth2TokenFormat.REFERENCE).build())
+//				.redirectUri("http://127.0.0.1:9004/login/oauth2/code/client-id-1")
+//				.redirectUri("http://127.0.0.1:9004/login/oauth2/code/client-id-2")
+//				.scope(OidcScopes.OPENID)
+//				.scope(OidcScopes.PROFILE)
+//				.scope("message.read")
+//				.scope("message.write")
+//				.scope("user_info")
+//				.scope("pull_requests")
+//				// 登录成功后对scope进行确认授权
+//				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+//				.build();
+//
+//		return new InMemoryRegisteredClientRepository(registeredClient);
+//	}
+//
+//
+//	@Bean
+//	public JWKSource<SecurityContext> jwkSource() {
+//		KeyPair keyPair = generateRsaKey();
+//		RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+//		RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+//		RSAKey rsaKey = new RSAKey.Builder(publicKey)
+//				.privateKey(privateKey)
+//				.keyID(UUID.randomUUID().toString())
+//				.build();
+//		JWKSet jwkSet = new JWKSet(rsaKey);
+//		return new ImmutableJWKSet<>(jwkSet);
+//	}
+//
+//	private static KeyPair generateRsaKey() {
+//		KeyPair keyPair;
+//		try {
+//			KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+//			keyPairGenerator.initialize(2048);
+//			keyPair = keyPairGenerator.generateKeyPair();
+//		}
+//		catch (Exception ex) {
+//			throw new IllegalStateException(ex);
+//		}
+//		return keyPair;
+//	}
+//
+//	@Bean
+//	public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
+//		return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+//	}
+//
+//	@Bean
+//	public AuthorizationServerSettings authorizationServerSettings() {
+//		return AuthorizationServerSettings.builder().build();
+//	}
+
 	@Bean
 	@Order(1)
-	public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
-			throws Exception {
+	public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
 		OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
 		http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-			.oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0
+				.oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
 		http
-			// Redirect to the login page when not authenticated from the
-			// authorization endpoint
-			.exceptionHandling((exceptions) -> exceptions
-				.defaultAuthenticationEntryPointFor(
-					new LoginUrlAuthenticationEntryPoint("/login"),
-					new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
+				// Redirect to the login page when not authenticated from the
+				// authorization endpoint
+				.exceptionHandling((exceptions) -> exceptions
+						.authenticationEntryPoint(
+								new LoginUrlAuthenticationEntryPoint("/login"))
 				)
-			)
-			// Accept access tokens for User Info and/or Client Registration
-			.oauth2ResourceServer((resourceServer) -> resourceServer
-				.jwt(Customizer.withDefaults()));
+				// Accept access tokens for User Info and/or Client Registration
+				.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt);
 
 		return http.build();
 	}
 
 	@Bean
 	@Order(2)
-	public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
-			throws Exception {
-		http.authorizeRequests((authorize) -> authorize
-				.anyRequest().authenticated()
-			)
-			// Form login handles the redirect to the login page from the
-			// authorization server filter chain
-			.formLogin(Customizer.withDefaults());
+	public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+		http
+				.authorizeHttpRequests((authorize) -> authorize
+						.requestMatchers(new AntPathRequestMatcher("/actuator/**"),
+								new AntPathRequestMatcher("/oauth2/**"),
+								new AntPathRequestMatcher("/**/*.json"),
+								new AntPathRequestMatcher("/**/*.html")).permitAll()
+						.anyRequest().authenticated()
+				)
+				// Form login handles the redirect to the login page from the
+				// authorization server filter chain
+				.formLogin(Customizer.withDefaults());
 
 		return http.build();
 	}
@@ -92,23 +225,27 @@ public class SecurityConfig {
 
 	@Bean
 	public RegisteredClientRepository registeredClientRepository() {
-		RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
-				.clientId("oidc-client")
-				.clientSecret("{noop}secret")
+		RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
+				.clientId("demo-client-id")
+				.clientSecret("{noop}demo-client-secret")
 				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
 				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
 				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-				.redirectUri("http://127.0.0.1:9000/login/oauth2/code/oidc-client")
-				.redirectUri("http://www.baidu.com")
-				.postLogoutRedirectUri("http://127.0.0.1:9000/")
+				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+//                .tokenSettings(TokenSettings.builder().accessTokenFormat(OAuth2TokenFormat.REFERENCE).build())
+				.redirectUri("http://127.0.0.1:9004/login/oauth2/code/client-id-1")
+				.redirectUri("http://127.0.0.1:9004/login/oauth2/code/client-id-2")
 				.scope(OidcScopes.OPENID)
 				.scope(OidcScopes.PROFILE)
 				.scope("message.read")
 				.scope("message.write")
+				.scope("user_info")
+				.scope("pull_requests")
+				// 登录成功后对scope进行确认授权
 				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
 				.build();
 
-		return new InMemoryRegisteredClientRepository(oidcClient);
+		return new InMemoryRegisteredClientRepository(registeredClient);
 	}
 
 	@Bean
@@ -130,8 +267,7 @@ public class SecurityConfig {
 			KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
 			keyPairGenerator.initialize(2048);
 			keyPair = keyPairGenerator.generateKeyPair();
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			throw new IllegalStateException(ex);
 		}
 		return keyPair;
@@ -145,7 +281,7 @@ public class SecurityConfig {
 	@Bean
 	public AuthorizationServerSettings authorizationServerSettings() {
 		return AuthorizationServerSettings.builder().build();
-	}
 
+	}
 }
 
