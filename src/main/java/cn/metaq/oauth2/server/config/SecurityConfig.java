@@ -242,7 +242,7 @@ public class SecurityConfig {
 				.scope("user_info")
 				.scope("pull_requests")
 				// 登录成功后对scope进行确认授权
-				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())
 				.build();
 
 		return new InMemoryRegisteredClientRepository(registeredClient);

@@ -1,0 +1,2 @@
+GET http://localhost:9000/oauth2/authorize?response_type=code&client_id=demo-client-id&scope=message.read&redirect_uri=https://cn.bing.com
+Accept: application/json
