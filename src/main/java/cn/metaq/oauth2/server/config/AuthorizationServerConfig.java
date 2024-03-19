@@ -56,11 +56,15 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
+import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,29 +77,9 @@ public class AuthorizationServerConfig {
 
 	@Bean
 	@Order(Ordered.HIGHEST_PRECEDENCE)
-	public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,AuthenticationManager authenticationManager,OAuth2AuthorizationService authorizationService, OAuth2TokenGenerator<?> tokenGenerator) throws Exception {
-//		OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-
-		OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
-		authorizationServerConfigurer.tokenEndpoint((Customizer<OAuth2TokenEndpointConfigurer>) oAuth2TokenEndpointConfigurer -> oAuth2TokenEndpointConfigurer
-				.accessTokenRequestConverter(new PasswordAuthenticationConverter())
-				.authenticationProvider(new PasswordAuthenticationProvider(authenticationManager, authorizationService, tokenGenerator))
-				.accessTokenResponseHandler(new CustomAuthenticationSuccessHandler())
-				.errorResponseHandler(new CustomAuthenticationFailureHandler()));
-
-		RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
-		http.requestMatcher(endpointsMatcher)
-//				.authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated())
-				.csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
-				.apply(authorizationServerConfigurer);
-
-
-		// Accept access tokens for User Info and/or Client Registration
-		http.oauth2ResourceServer(oauth2ResourceServer ->
-				oauth2ResourceServer.jwt(Customizer.withDefaults()));
-
-		return http.build();
-//		return http.formLogin(Customizer.withDefaults()).build();
+	public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+		OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+		return http.formLogin(Customizer.withDefaults()).build();
 	}
 
 	// @formatter:off
@@ -104,13 +88,13 @@ public class AuthorizationServerConfig {
 		RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
 				.clientId("messaging-client")
 				.clientSecret("{noop}secret")
+				.clientName("messaging-client")
 				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
 				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
 				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
 				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-				.authorizationGrantType(AuthorizationGrantType.PASSWORD) // 密码模式
-				.redirectUri("http://127.0.0.1:9000/login/oauth2/code/messaging-client-oidc")
-				.redirectUri("http://127.0.0.1:9000/authorized")
+				.redirectUri("http://127.0.0.1:9004/login/oauth2/code/messaging-client-oidc")
+				.redirectUri("http://127.0.0.1:9004/authorized")
 				.scope(OidcScopes.OPENID)
 				.scope("message.read")
 				.scope("message.write")
@@ -125,64 +109,15 @@ public class AuthorizationServerConfig {
 	}
 	// @formatter:on
 
-//	@Bean
-//	public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
-//		return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
-//	}
-
 	@Bean
-	public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
-														   RegisteredClientRepository registeredClientRepository) {
-
-		JdbcOAuth2AuthorizationService service = new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
-		JdbcOAuth2AuthorizationService.OAuth2AuthorizationRowMapper rowMapper = new JdbcOAuth2AuthorizationService.OAuth2AuthorizationRowMapper(registeredClientRepository);
-		rowMapper.setLobHandler(new DefaultLobHandler());
-		ObjectMapper objectMapper = new ObjectMapper();
-		ClassLoader classLoader = JdbcOAuth2AuthorizationService.class.getClassLoader();
-		List<Module> securityModules = SecurityJackson2Modules.getModules(classLoader);
-		objectMapper.registerModules(securityModules);
-		objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
-		// 使用刷新模式，需要从 oauth2_authorization 表反序列化attributes字段得到用户信息(SysUserDetails)
-		objectMapper.addMixIn(CustomUserDetails.class, CustomUserMixin.class);
-		objectMapper.addMixIn(Long.class, Object.class);
-
-		rowMapper.setObjectMapper(objectMapper);
-		service.setAuthorizationRowMapper(rowMapper);
-		return service;
+	public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
+		return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
 	}
 
 	@Bean
 	public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
 		return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
 	}
-
-//	@Bean
-//	public JWKSource<SecurityContext> jwkSource() {
-////		RSAKey rsaKey = Jwks.generateRsa();
-//		KeyPair keyPair = generateRsaKey();
-//		RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-//		RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-//		// @formatter:off
-//		RSAKey rsaKey = new RSAKey.Builder(publicKey)
-//				.privateKey(privateKey)
-//				.keyID(UUID.randomUUID().toString())
-//				.build();
-//
-//		JWKSet jwkSet = new JWKSet(rsaKey);
-//		return (jwkSelector, securityContext) -> jwkSelector.select(jwkSet);
-//	}
-//
-//	private static KeyPair generateRsaKey() { // <6>
-//		KeyPair keyPair;
-//		try {
-//			KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-//			keyPairGenerator.initialize(2048);
-//			keyPair = keyPairGenerator.generateKeyPair();
-//		} catch (Exception ex) {
-//			throw new IllegalStateException(ex);
-//		}
-//		return keyPair;
-//	}
 
 	@Bean
 	public JWKSource<SecurityContext> jwkSource() {
@@ -192,43 +127,22 @@ public class AuthorizationServerConfig {
 	}
 
 	@Bean
-	public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
-		return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
-	}
-
-	@Bean
 	public ProviderSettings providerSettings() {
-		return ProviderSettings.builder().issuer("http://127.0.0.1:9000").build();
+		return ProviderSettings.builder().issuer("http://localhost:9000").build();
 	}
 
-	@Bean
-	public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-		return authenticationConfiguration.getAuthenticationManager();
-	}
-
-	@Bean
-	public OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource, OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer) {
-
-		JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwsEncoder(jwkSource));
-		jwtGenerator.setJwtCustomizer(jwtCustomizer);
-
-		OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
-		OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
-		return new DelegatingOAuth2TokenGenerator(jwtGenerator,accessTokenGenerator, refreshTokenGenerator);
-	}
-
-	@Bean
-	public EmbeddedDatabase embeddedDatabase() {
-		// @formatter:off
-		return new EmbeddedDatabaseBuilder()
-				.generateUniqueName(true)
-				.setType(EmbeddedDatabaseType.H2)
-				.setScriptEncoding("UTF-8")
-				.addScript("org/springframework/security/oauth2/server/authorization/oauth2-authorization-schema.sql")
-				.addScript("org/springframework/security/oauth2/server/authorization/oauth2-authorization-consent-schema.sql")
-				.addScript("org/springframework/security/oauth2/server/authorization/client/oauth2-registered-client-schema.sql")
-				.build();
-		// @formatter:on
-	}
+//	@Bean
+//	public EmbeddedDatabase embeddedDatabase() {
+//		// @formatter:off
+//		return new EmbeddedDatabaseBuilder()
+//				.generateUniqueName(true)
+//				.setType(EmbeddedDatabaseType.H2)
+//				.setScriptEncoding("UTF-8")
+//				.addScript("org/springframework/security/oauth2/server/authorization/oauth2-authorization-schema.sql")
+//				.addScript("org/springframework/security/oauth2/server/authorization/oauth2-authorization-consent-schema.sql")
+//				.addScript("org/springframework/security/oauth2/server/authorization/client/oauth2-registered-client-schema.sql")
+//				.build();
+//		// @formatter:on
+//	}
 
 }

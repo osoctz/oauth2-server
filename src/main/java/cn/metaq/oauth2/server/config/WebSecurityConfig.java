@@ -12,6 +12,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * SpringSecurity配置
@@ -20,24 +23,30 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class WebSecurityConfig {
 
-//    @Bean
-//    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-//        http
-//                .authorizeRequests(authorizeRequests ->
-//                        authorizeRequests.anyRequest().authenticated()
-//                )
-//                .formLogin(withDefaults());
-//        return http.build();
-//    }
+    @Bean
+    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests(authorizeRequests ->
+                        authorizeRequests.anyRequest().authenticated()
+                )
+                .formLogin(withDefaults());
+        return http.build();
+    }
 
 //    @Bean
 //    @Order(2)
-//    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
-//            throws Exception {
-//        http.authorizeRequests((authorize) -> authorize
+//    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//                .authorizeHttpRequests((authorize) -> authorize
+//                        .requestMatchers(new AntPathRequestMatcher("/actuator/**"),
+//                                new AntPathRequestMatcher("/oauth2/**"),
+//                                new AntPathRequestMatcher("/**/*.json"),
+//                                new AntPathRequestMatcher("/**/*.html")).permitAll()
 //                        .anyRequest().authenticated()
-//                )
-//                .formLogin(Customizer.withDefaults());
+//                );
+//                // Form login handles the redirect to the login page from the
+//                // authorization server filter chain
+////                .formLogin(Customizer.withDefaults());
 //
 //        return http.build();
 //    }
